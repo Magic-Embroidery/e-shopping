@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #F5DDD8;
+    --color-primary: #C0305A;
+    --color-secondary: #7B2D8B;
+    --color-text-dark: #4A1040;
+    --color-accent: #E8A0B0;
+    --color-white: #FFFFFF;
+    --color-card-bg: #FDF0ED;
+  }
+
+  body {
+    @apply bg-brand-bg text-brand-textDark font-body antialiased selection:bg-brand-accent selection:text-brand-textDark;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-brand-secondary font-semibold;
+  }
+}
+
+/* Custom Scrollbar for elegant branding */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-card-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* Infinite Hardware-Accelerated Marquee Ticker */
+@keyframes marquee {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+.animate-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee 25s linear infinite;
+  will-change: transform;
+}
+
+/* CSS Keyframe animations for performance-critical layers */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Custom masonry utility to handle grid alignments */
+.masonry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-gap: 20px;
+}
