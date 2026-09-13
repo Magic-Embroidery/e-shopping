@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Lock, LogOut, CheckCircle, Clock, Trash2, Plus, Sparkles, AlertTriangle, RefreshCw, Loader } from 'lucide-react';
+import { Lock, LogOut, CheckCircle, Clock, Trash2, Plus, Sparkles, AlertTriangle, RefreshCw, Loader, UserPlus } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import SEO from '../components/SEO';
 
@@ -26,6 +26,8 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'signup'
   const [activeTab, setActiveTab] = useState('orders'); // orders | gallery | services
 
   // Dashboard Data States (initialized with mock data if Supabase unconfigured)
@@ -139,7 +141,11 @@ export default function Admin() {
         if (error) throw error;
         toast.success("Successfully Logged In!");
       } catch (err) {
-        toast.error(err.message || "Invalid credentials.");
+        if (err.message?.toLowerCase().includes("not confirmed")) {
+          toast.error("Account created, but email not confirmed! In Supabase Dashboard > Authentication > Users, click 'Confirm User'.", { duration: 6000 });
+        } else {
+          toast.error(err.message || "Invalid credentials.");
+        }
       }
     } else {
       // Mock Login bypass
@@ -153,6 +159,56 @@ export default function Admin() {
       } else {
         toast.error("Invalid credentials.");
       }
+    }
+    setLoading(false);
+  };
+
+  // Sign Up handler
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match!");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
+      return;
+    }
+
+    setLoading(true);
+
+    const normalizedEmail = email.includes('@')
+      ? email.trim().toLowerCase()
+      : `${email.trim().toLowerCase()}@magic.com`;
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: normalizedEmail,
+          password: password,
+          options: {
+            data: {
+              display_name: email.split('@')[0],
+              role: 'admin'
+            }
+          }
+        });
+        if (error) throw error;
+
+        if (data?.session) {
+          toast.success("Admin account registered and logged in!");
+          setSession(data.session);
+        } else {
+          toast.success("Account created! In Supabase Dashboard > Auth > Users, confirm user or sign in directly.", { duration: 7000 });
+          setAuthMode('signin');
+        }
+      } catch (err) {
+        toast.error(err.message || "Failed to create account.");
+      }
+    } else {
+      localStorage.setItem('mockAdminSession', normalizedEmail);
+      setSession({ user: { email: normalizedEmail } });
+      toast.success("Admin account created (mock mode) and logged in!");
     }
     setLoading(false);
   };
@@ -294,12 +350,12 @@ export default function Admin() {
         <div className="w-full max-w-md bg-brand-white border-2 border-brand-accent/30 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-1 bg-brand-primary" />
           
-          <div className="flex flex-col items-center mb-8 text-center">
+          <div className="flex flex-col items-center mb-6 text-center">
             <div className="bg-brand-primary/10 p-4 rounded-3xl text-brand-primary mb-3">
-              <Lock className="w-8 h-8" />
+              {authMode === 'signin' ? <Lock className="w-8 h-8" /> : <UserPlus className="w-8 h-8" />}
             </div>
             <h1 className="font-heading text-2xl sm:text-3xl font-bold text-brand-secondary">
-              Admin Login
+              {authMode === 'signin' ? "Admin Login" : "Register Admin"}
             </h1>
             <p className="text-xs font-semibold text-brand-textDark/60 mt-2">
               Magic Embroidery Tailor Console
@@ -313,14 +369,42 @@ export default function Admin() {
               <div>
                 <span className="font-bold text-amber-950 block mb-0.5">Mock Mode Active</span>
                 Supabase keys are unconfigured. You can log in using: <br />
-                <span className="bg-amber-500/20 px-1 py-0.5 rounded text-amber-950">admin@magic.com</span> with password <span className="bg-amber-500/20 px-1 py-0.5 rounded text-amber-950">magicadmin</span>.
+                <span className="bg-amber-500/20 px-1 py-0.5 rounded text-amber-950">admin@magic.com</span> with password <span className="bg-amber-500/20 px-1 py-0.5 rounded text-amber-950">magicadmin</span>, or sign up a new mock user.
               </div>
             </div>
           )}
 
-          <form onSubmit={handleSignIn} className="flex flex-col gap-4">
+          {/* Auth Mode Toggle Tabs */}
+          <div className="flex bg-brand-cardBg p-1 rounded-2xl border border-brand-accent/25 mb-6">
+            <button
+              type="button"
+              onClick={() => setAuthMode('signin')}
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                authMode === 'signin'
+                  ? 'bg-brand-primary text-brand-white shadow-sm'
+                  : 'text-brand-textDark/70 hover:text-brand-textDark'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthMode('signup')}
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                authMode === 'signup'
+                  ? 'bg-brand-primary text-brand-white shadow-sm'
+                  : 'text-brand-textDark/70 hover:text-brand-textDark'
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <form onSubmit={authMode === 'signin' ? handleSignIn : handleSignUp} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Username or Email</label>
+              <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">
+                {authMode === 'signin' ? "Username or Email" : "New Admin Username or Email"}
+              </label>
               <input
                 type="text"
                 placeholder="Shakena or admin@magic.com"
@@ -339,17 +423,59 @@ export default function Admin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3 font-body text-sm font-semibold focus:outline-none focus:border-brand-primary text-brand-textDark"
               />
             </div>
 
+            {authMode === 'signup' && (
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Confirm Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3 font-body text-sm font-semibold focus:outline-none focus:border-brand-primary text-brand-textDark"
+                />
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
-              className="bg-brand-primary hover:bg-brand-primary/95 text-brand-white font-body font-bold text-sm py-3.5 rounded-full transition-transform hover:scale-105 shadow-md flex items-center justify-center gap-2 mt-4"
+              className="bg-brand-primary hover:bg-brand-primary/95 text-brand-white font-body font-bold text-sm py-3.5 rounded-full transition-transform hover:scale-105 shadow-md flex items-center justify-center gap-2 mt-2"
             >
-              {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Sign In to Console"}
+              {loading ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : authMode === 'signin' ? (
+                "Sign In to Console"
+              ) : (
+                "Create Admin User"
+              )}
             </button>
+
+            <div className="text-center mt-2">
+              {authMode === 'signin' ? (
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('signup')}
+                  className="text-xs font-semibold text-brand-primary hover:underline"
+                >
+                  Need to register a new admin? <span className="font-bold">Sign Up</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('signin')}
+                  className="text-xs font-semibold text-brand-primary hover:underline"
+                >
+                  Already have an account? <span className="font-bold">Sign In</span>
+                </button>
+              )}
+            </div>
           </form>
         </div>
       </div>
