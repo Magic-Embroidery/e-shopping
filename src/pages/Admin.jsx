@@ -407,7 +407,6 @@ export default function Admin() {
               </label>
               <input
                 type="text"
-                placeholder="Shakena or admin@magic.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -419,7 +418,6 @@ export default function Admin() {
               <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Password</label>
               <input
                 type="password"
-                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -433,7 +431,6 @@ export default function Admin() {
                 <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Confirm Password</label>
                 <input
                   type="password"
-                  placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
