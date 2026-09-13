@@ -1,9 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, Star, Scissors, Flower, CheckCircle } from 'lucide-react';
+import { Sparkles, ArrowRight, Star, Scissors, Flower } from 'lucide-react';
 import HowItWorks from '../components/HowItWorks';
 import SEO from '../components/SEO';
+
+const flowerPetals = [
+  { top: '15%', left: '20%', duration: 12 },
+  { top: '70%', left: '15%', duration: 15 },
+  { top: '35%', left: '85%', duration: 18 },
+  { top: '80%', left: '75%', duration: 21 },
+  { top: '25%', left: '55%', duration: 24 },
+  { top: '60%', left: '40%', duration: 27 },
+];
 
 // High-quality embroidery placeholders
 const sampleServices = [
@@ -77,13 +86,13 @@ export default function Home() {
         
         {/* Flower Petal CSS Floating elements in Background */}
         <div className="absolute inset-0 pointer-events-none z-0">
-          {[...Array(6)].map((_, i) => (
+          {flowerPetals.map((petal, i) => (
             <motion.div
               key={i}
               className="absolute text-brand-primary/10"
               style={{
-                top: `${Math.random() * 80 + 10}%`,
-                left: `${Math.random() * 80 + 10}%`,
+                top: petal.top,
+                left: petal.left,
               }}
               animate={{
                 y: [0, 40, 0],
@@ -91,7 +100,7 @@ export default function Home() {
                 rotate: [0, 360, 0]
               }}
               transition={{
-                duration: 12 + i * 3,
+                duration: petal.duration,
                 repeat: Infinity,
                 ease: "linear"
               }}

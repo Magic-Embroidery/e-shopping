@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, X, Image as ImageIcon, Loader } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import SEO from '../components/SEO';
 

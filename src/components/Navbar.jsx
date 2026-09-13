@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Scissors } from 'lucide-react';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,11 +18,6 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Close mobile drawer on route change
-  useEffect(() => {
-    setIsOpen(false);
-  }, [location]);
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -137,6 +131,7 @@ export default function Navbar() {
                   <NavLink
                     key={link.path}
                     to={link.path}
+                    onClick={() => setIsOpen(false)}
                     className={({ isActive }) =>
                       `font-body text-lg font-bold transition-colors ${
                         isActive ? 'text-brand-primary' : 'text-brand-textDark'
@@ -148,6 +143,7 @@ export default function Navbar() {
                 ))}
                 <Link 
                   to="/order" 
+                  onClick={() => setIsOpen(false)}
                   className="bg-brand-primary text-brand-white text-center font-body font-bold py-3 rounded-full shadow-lg shadow-brand-primary/20 mt-4"
                 >
                   Order Now

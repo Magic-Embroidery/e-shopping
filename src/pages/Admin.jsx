@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Lock, LogOut, CheckCircle, Clock, Trash2, Plus, Sparkles, AlertTriangle, RefreshCw, Upload, Eye } from 'lucide-react';
+import { Lock, LogOut, CheckCircle, Clock, Trash2, Plus, Sparkles, AlertTriangle, RefreshCw, Loader } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import SEO from '../components/SEO';
 
@@ -16,17 +16,23 @@ const mockGallery = [
 ];
 
 export default function Admin() {
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState(() => {
+    if (!isSupabaseConfigured && typeof window !== 'undefined') {
+      const mockUser = localStorage.getItem('mockAdminSession');
+      return mockUser ? { user: { email: mockUser } } : null;
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState('orders'); // orders | gallery | services
 
-  // Dashboard Data States
-  const [orders, setOrders] = useState([]);
-  const [gallery, setGallery] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-  const [galleryLoading, setGalleryLoading] = useState(false);
+  // Dashboard Data States (initialized with mock data if Supabase unconfigured)
+  const [orders, setOrders] = useState(() => !isSupabaseConfigured ? mockOrders : []);
+  const [gallery, setGallery] = useState(() => !isSupabaseConfigured ? mockGallery : []);
+  const [ordersLoading, setOrdersLoading] = useState(() => !isSupabaseConfigured ? false : true);
+  const [galleryLoading, setGalleryLoading] = useState(() => !isSupabaseConfigured ? false : true);
 
   // Form states for gallery uploads
   const [newImage, setNewImage] = useState(null);
@@ -46,20 +52,8 @@ export default function Admin() {
       });
 
       return () => subscription.unsubscribe();
-    } else {
-      // Local mock check (if session exists in localStorage)
-      const mockUser = localStorage.getItem('mockAdminSession');
-      if (mockUser) setSession({ user: { email: mockUser } });
     }
   }, []);
-
-  // Fetch Dashboard content
-  useEffect(() => {
-    if (session) {
-      fetchOrders();
-      fetchGallery();
-    }
-  }, [session]);
 
   const fetchOrders = async () => {
     setOrdersLoading(true);
@@ -71,7 +65,7 @@ export default function Admin() {
           .order('created_at', { ascending: false });
         if (error) throw error;
         setOrders(data || []);
-      } catch (err) {
+      } catch {
         toast.error("Failed to load live orders, using mock database.");
         setOrders(mockOrders);
       }
@@ -91,7 +85,7 @@ export default function Admin() {
           .order('created_at', { ascending: false });
         if (error) throw error;
         setGallery(data || []);
-      } catch (err) {
+      } catch {
         setGallery(mockGallery);
       }
     } else {
@@ -99,6 +93,36 @@ export default function Admin() {
     }
     setGalleryLoading(false);
   };
+
+  // Fetch Dashboard content asynchronously when session is authenticated
+  useEffect(() => {
+    let ignore = false;
+
+    if (session && isSupabaseConfigured) {
+      Promise.all([
+        supabase.from('orders').select('*').order('created_at', { ascending: false }),
+        supabase.from('gallery').select('*').order('created_at', { ascending: false })
+      ]).then(([ordersRes, galleryRes]) => {
+        if (!ignore) {
+          if (ordersRes.data) setOrders(ordersRes.data);
+          if (galleryRes.data) setGallery(galleryRes.data);
+          setOrdersLoading(false);
+          setGalleryLoading(false);
+        }
+      }).catch(() => {
+        if (!ignore) {
+          setOrders(mockOrders);
+          setGallery(mockGallery);
+          setOrdersLoading(false);
+          setGalleryLoading(false);
+        }
+      });
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, [session]);
 
   // Sign In handler
   const handleSignIn = async (e) => {
@@ -150,7 +174,7 @@ export default function Admin() {
         if (error) throw error;
         toast.success(`Order status updated to ${nextStatus}!`);
         fetchOrders();
-      } catch (err) {
+      } catch {
         toast.error("Failed to update status.");
       }
     } else {
@@ -173,7 +197,7 @@ export default function Admin() {
         if (error) throw error;
         toast.success("Deleted image from portfolio!");
         fetchGallery();
-      } catch (err) {
+      } catch {
         toast.error("Failed to delete image.");
       }
     } else {

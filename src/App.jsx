@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Loader } from 'lucide-react';

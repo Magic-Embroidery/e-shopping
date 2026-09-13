@@ -1,4 +1,3 @@
-import React from 'react';
 import { Phone, MapPin, MessageCircle, Star, Shield, Zap, Sparkles } from 'lucide-react';
 import SEO from '../components/SEO';
 

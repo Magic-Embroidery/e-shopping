@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
@@ -16,6 +16,11 @@ const servicesOptions = [
   'Burka Alteration & Embroidery'
 ];
 
+function generateOrderReferenceFileName(originalName) {
+  const fileExt = originalName.split('.').pop();
+  return `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+}
+
 export default function Order() {
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -25,8 +30,6 @@ export default function Order() {
     register,
     handleSubmit,
     reset,
-    watch,
-    setValue,
     formState: { errors }
   } = useForm({
     defaultValues: {
@@ -38,8 +41,6 @@ export default function Order() {
       address: ''
     }
   });
-
-  const selectedService = watch('service');
 
   // Handle image file selections and client-side compressed previews
   const handleFileChange = async (e) => {
@@ -68,7 +69,7 @@ export default function Order() {
     reader.readAsDataURL(file);
   };
 
-  const onSubmit = async (data) => {
+  const handleOrderSubmit = async (data) => {
     setSubmitting(true);
     let imageUrl = null;
 
@@ -86,8 +87,7 @@ export default function Order() {
           toast.loading("Compressing reference photo...", { id: "upload-status" });
           const compressedFile = await imageCompression(selectedFile, options);
 
-          const fileExt = selectedFile.name.split('.').pop();
-          const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+          const fileName = generateOrderReferenceFileName(selectedFile.name);
           const filePath = `order-references/${fileName}`;
 
           toast.loading("Uploading reference photo...", { id: "upload-status" });
@@ -210,7 +210,7 @@ export default function Order() {
           {/* Decorative sewing thread line */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent" />
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+          <form onSubmit={handleSubmit(handleOrderSubmit)} className="flex flex-col gap-6">
             
             {/* Row 1: Name and Phone */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

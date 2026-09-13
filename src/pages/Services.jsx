@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { MessageSquare, Scissors, ShieldCheck, Heart, Sparkles, Award } from 'lucide-react';
 import SEO from '../components/SEO';
