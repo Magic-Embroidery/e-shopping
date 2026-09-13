@@ -129,22 +129,29 @@ export default function Admin() {
     e.preventDefault();
     setLoading(true);
 
+    const normalizedEmail = email.includes('@')
+      ? email.trim().toLowerCase()
+      : `${email.trim().toLowerCase()}@magic.com`;
+
     if (isSupabaseConfigured) {
       try {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
         if (error) throw error;
         toast.success("Successfully Logged In!");
       } catch (err) {
         toast.error(err.message || "Invalid credentials.");
       }
     } else {
-      // Mock Sign In (resilient fallback)
-      if (email === 'admin@magic.com' && password === 'magicadmin') {
-        setSession({ user: { email } });
-        localStorage.setItem('mockAdminSession', email);
-        toast.success("Mock Signed In successfully!");
+      // Mock Login bypass
+      if (
+        (normalizedEmail === 'admin@magic.com' && password === 'magicadmin') ||
+        (normalizedEmail === 'shakena@magic.com' && password === 'Rasha@12345')
+      ) {
+        localStorage.setItem('mockAdminSession', normalizedEmail);
+        setSession({ user: { email: normalizedEmail } });
+        toast.success("Logged in to administration panel!");
       } else {
-        toast.error("Mock credentials are: admin@magic.com / magicadmin");
+        toast.error("Invalid credentials.");
       }
     }
     setLoading(false);
@@ -313,10 +320,10 @@ export default function Admin() {
 
           <form onSubmit={handleSignIn} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Email Address</label>
+              <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Username or Email</label>
               <input
-                type="email"
-                placeholder="admin@magic.com"
+                type="text"
+                placeholder="Shakena or admin@magic.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
