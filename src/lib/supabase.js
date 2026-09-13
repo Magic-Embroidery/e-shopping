@@ -18,3 +18,14 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
 
+if (typeof window !== 'undefined') {
+  if (isSupabaseConfigured) {
+    console.info('[Supabase] Successfully configured with live credentials.')
+  } else {
+    console.warn('[Supabase] Running in Mock Mode. Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY.', {
+      hasUrl: Boolean(supabaseUrl),
+      hasAnonKey: Boolean(supabaseAnonKey),
+    })
+  }
+}
+
