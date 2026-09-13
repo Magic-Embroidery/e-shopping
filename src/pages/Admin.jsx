@@ -291,7 +291,7 @@ export default function Admin() {
       if (isSupabaseConfigured) {
         const fileExt = newImage.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-        const filePath = `gallery/${fileName}`;
+        const filePath = fileName;
 
         // Upload to gallery bucket
         const { error: uploadErr } = await supabase.storage

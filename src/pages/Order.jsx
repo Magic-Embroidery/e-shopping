@@ -88,7 +88,7 @@ export default function Order() {
           const compressedFile = await imageCompression(selectedFile, options);
 
           const fileName = generateOrderReferenceFileName(selectedFile.name);
-          const filePath = `order-references/${fileName}`;
+          const filePath = fileName;
 
           toast.loading("Uploading reference photo...", { id: "upload-status" });
           const { error: uploadError } = await supabase.storage
