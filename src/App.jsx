@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react';
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Loader } from 'lucide-react';
 
@@ -11,8 +11,8 @@ import WhatsAppButton from './components/WhatsAppButton';
 // Lazy-loaded Pages (optimized for rapid mobile paints)
 const Home = lazy(() => import('./pages/Home'));
 const Services = lazy(() => import('./pages/Services'));
-const Gallery = lazy(() => import('./pages/Gallery'));
-const Order = lazy(() => import('./pages/Order'));
+const Designs = lazy(() => import('./pages/Designs'));
+const CustomDesign = lazy(() => import('./pages/CustomDesign'));
 const About = lazy(() => import('./pages/About'));
 const Admin = lazy(() => import('./pages/Admin'));
 
@@ -67,8 +67,11 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/services" element={<Services />} />
-              <Route path="/gallery" element={<Gallery />} />
-              <Route path="/order" element={<Order />} />
+              <Route path="/designs" element={<Designs />} />
+              <Route path="/gallery" element={<Designs />} />
+              <Route path="/custom-design" element={<CustomDesign />} />
+              <Route path="/customised-design" element={<CustomDesign />} />
+              <Route path="/order" element={<Navigate to="/designs" replace />} />
               <Route path="/about" element={<About />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<Home />} /> {/* Wildcard route fallback */}

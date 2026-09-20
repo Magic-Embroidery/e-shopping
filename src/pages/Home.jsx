@@ -133,17 +133,19 @@ export default function Home() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center mt-4">
-                <Link 
-                  to="/order" 
+                <a 
+                  href="https://wa.me/919994546013"
+                  target="_blank"
+                  rel="noopener noreferrer" 
                   className="w-full sm:w-auto text-center bg-brand-primary hover:bg-brand-primary/95 text-brand-white font-body font-bold px-8 py-4 rounded-full shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/35 transition-all hover:scale-105"
                 >
                   Order on WhatsApp
-                </Link>
+                </a>
                 <Link 
-                  to="/gallery" 
+                  to="/designs" 
                   className="w-full sm:w-auto text-center border border-brand-primary hover:bg-brand-accent/20 text-brand-primary font-body font-bold px-8 py-4 rounded-full transition-all hover:scale-105"
                 >
-                  View Our Work
+                  Explore Designs
                 </Link>
               </div>
             </motion.div>
@@ -245,10 +247,10 @@ export default function Home() {
                     {service.desc}
                   </p>
                   <Link 
-                    to="/order" 
+                    to="/designs" 
                     className="inline-flex items-center gap-1.5 text-brand-primary text-xs uppercase font-bold tracking-widest group-hover:gap-2.5 transition-all"
                   >
-                    Order Now <ArrowRight className="w-3.5 h-3.5" />
+                    Designs <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </motion.div>
@@ -276,16 +278,16 @@ export default function Home() {
           
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-16">
             <div className="text-center sm:text-left max-w-xl">
-              <span className="text-xs uppercase tracking-widest text-brand-primary font-bold">Stunning Gallery</span>
+              <span className="text-xs uppercase tracking-widest text-brand-primary font-bold">Stunning Creations</span>
               <h2 className="text-3xl sm:text-4xl font-bold text-brand-secondary mt-2 leading-tight">
                 Our Latest Designs
               </h2>
             </div>
             <Link 
-              to="/gallery" 
+              to="/designs" 
               className="bg-brand-primary hover:bg-brand-primary/95 text-brand-white font-body font-bold text-sm px-6 py-3.5 rounded-full transition-transform hover:scale-105"
             >
-              View Full Gallery
+              View Designs Catalog
             </Link>
           </div>
 

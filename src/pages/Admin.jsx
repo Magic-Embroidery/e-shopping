@@ -2,17 +2,13 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Lock, LogOut, CheckCircle, Clock, Trash2, Plus, Sparkles, AlertTriangle, RefreshCw, Loader, UserPlus } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { fetchAllDesigns, createDesign, deleteDesignItem } from '../lib/designsData';
 import SEO from '../components/SEO';
 
 // Mock DB states in case Supabase is offline/mock is activated
 const mockOrders = [
   { id: '1', name: 'Anjali Devi', phone: '9840123456', service: 'Bridal Blouse Embroidery', description: 'Heavy gold beads with peacock border back neck design', delivery_date: '2026-06-15', address: '12, Gandhi Street, Selaiyur, Chennai 73', status: 'Pending', created_at: new Date().toISOString() },
   { id: '2', name: 'Fatima Begum', phone: '9940345678', service: 'Burka Alteration & Embroidery', description: 'Silver cuffs border stitch and length shortening', delivery_date: '2026-06-08', address: 'Abaya Mansion, Tambaram, Chennai 45', status: 'Completed', created_at: new Date().toISOString() }
-];
-
-const mockGallery = [
-  { id: '1', image_url: 'https://images.unsplash.com/photo-1610030469668-93535c17b6b3?auto=format&fit=crop&w=300&h=300&q=80', category: 'Bridal', caption: 'Classic Ruby Red Bridal Back' },
-  { id: '2', image_url: 'https://images.unsplash.com/photo-1605647540924-852290f6b0d5?auto=format&fit=crop&w=300&h=300&q=80', category: 'Blouse', caption: 'Emerald Sleeve Floral Borders' }
 ];
 
 export default function Admin() {
@@ -28,18 +24,23 @@ export default function Admin() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'signup'
-  const [activeTab, setActiveTab] = useState('orders'); // orders | gallery | services
+  const [activeTab, setActiveTab] = useState('orders'); // orders | designs
 
-  // Dashboard Data States (initialized with mock data if Supabase unconfigured)
+  // Dashboard Data States
   const [orders, setOrders] = useState(() => !isSupabaseConfigured ? mockOrders : []);
-  const [gallery, setGallery] = useState(() => !isSupabaseConfigured ? mockGallery : []);
+  const [designs, setDesigns] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(() => !isSupabaseConfigured ? false : true);
-  const [galleryLoading, setGalleryLoading] = useState(() => !isSupabaseConfigured ? false : true);
+  const [designsLoading, setDesignsLoading] = useState(true);
 
-  // Form states for gallery uploads
+  // Form states for design uploads
   const [newImage, setNewImage] = useState(null);
+  const [newDesignNumber, setNewDesignNumber] = useState('');
+  const [newDesignName, setNewDesignName] = useState('');
+  const [newPrice, setNewPrice] = useState('');
   const [newCategory, setNewCategory] = useState('Blouse');
-  const [newCaption, setNewCaption] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newFabric, setNewFabric] = useState('Raw Silk, Brocade & Silk Cotton');
+  const [newWorkType, setNewWorkType] = useState('Digital Zardosi & Thread');
   const [uploadingImage, setUploadingImage] = useState(false);
 
   // Check auth session
@@ -77,48 +78,45 @@ export default function Admin() {
     setOrdersLoading(false);
   };
 
-  const fetchGallery = async () => {
-    setGalleryLoading(true);
-    if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from('gallery')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        setGallery(data || []);
-      } catch {
-        setGallery(mockGallery);
-      }
-    } else {
-      setGallery(mockGallery);
+  const fetchDesigns = async () => {
+    setDesignsLoading(true);
+    try {
+      const data = await fetchAllDesigns();
+      setDesigns(data);
+    } catch {
+      toast.error("Failed to load designs.");
+    } finally {
+      setDesignsLoading(false);
     }
-    setGalleryLoading(false);
   };
 
   // Fetch Dashboard content asynchronously when session is authenticated
   useEffect(() => {
     let ignore = false;
 
-    if (session && isSupabaseConfigured) {
-      Promise.all([
-        supabase.from('orders').select('*').order('created_at', { ascending: false }),
-        supabase.from('gallery').select('*').order('created_at', { ascending: false })
-      ]).then(([ordersRes, galleryRes]) => {
-        if (!ignore) {
-          if (ordersRes.data) setOrders(ordersRes.data);
-          if (galleryRes.data) setGallery(galleryRes.data);
-          setOrdersLoading(false);
-          setGalleryLoading(false);
+    if (session) {
+      const loadData = async () => {
+        try {
+          if (isSupabaseConfigured) {
+            const ordersRes = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+            if (!ignore && ordersRes.data) setOrders(ordersRes.data);
+          } else {
+            if (!ignore) setOrders(mockOrders);
+          }
+
+          const designsData = await fetchAllDesigns();
+          if (!ignore) setDesigns(designsData);
+        } catch (e) {
+          console.warn("Failed loading dashboard data:", e);
+        } finally {
+          if (!ignore) {
+            setOrdersLoading(false);
+            setDesignsLoading(false);
+          }
         }
-      }).catch(() => {
-        if (!ignore) {
-          setOrders(mockOrders);
-          setGallery(mockGallery);
-          setOrdersLoading(false);
-          setGalleryLoading(false);
-        }
-      });
+      };
+
+      loadData();
     }
 
     return () => {
@@ -247,93 +245,69 @@ export default function Admin() {
     }
   };
 
-  // Delete Gallery Item
-  const handleDeleteGallery = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this gallery item?")) return;
+  // Delete Design Item
+  const handleDeleteDesign = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this design?")) return;
 
-    if (isSupabaseConfigured) {
-      try {
-        const { error } = await supabase
-          .from('gallery')
-          .delete()
-          .eq('id', id);
-        if (error) throw error;
-        toast.success("Deleted image from portfolio!");
-        fetchGallery();
-      } catch {
-        toast.error("Failed to delete image.");
-      }
-    } else {
-      setGallery(prev => prev.filter(g => g.id !== id));
-      toast.success("Deleted image from portfolio (mocked)!");
+    try {
+      await deleteDesignItem(id);
+      setDesigns(prev => prev.filter(d => String(d.id) !== String(id)));
+      toast.success("Design deleted from catalog!");
+    } catch {
+      toast.error("Failed to delete design.");
     }
   };
 
-  // Handle local gallery photo selection
+  // Handle local design photo selection
   const handlePhotoSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setNewImage(file);
   };
 
-  // Upload New Gallery Item
-  const handleAddGallery = async (e) => {
+  // Upload New Design Item
+  const handleAddDesign = async (e) => {
     e.preventDefault();
     if (!newImage) {
-      toast.error("Please select an image file first.");
+      toast.error("Please select a design image file first.");
+      return;
+    }
+    if (!newDesignName.trim()) {
+      toast.error("Please provide a design name.");
       return;
     }
 
     setUploadingImage(true);
     try {
-      let finalUrl = "";
+      const designNum = newDesignNumber.trim() || `ME-${100 + designs.length + 1}`;
+      const created = await createDesign({
+        design_number: designNum,
+        name: newDesignName.trim(),
+        price: newPrice.trim() || '₹1,499',
+        category: newCategory,
+        description: newDescription.trim() || 'Digital embroidery design pattern.',
+        properties: {
+          fabric: newFabric.trim() || 'Silk & Cotton Blends',
+          work_type: newWorkType.trim() || 'Digital Zari & Thread',
+          neck_style: 'Custom Pattern Fit',
+          stitch_density: 'High Density (50,000+ Stitches)',
+          turnaround: '2 - 3 Days'
+        },
+        imageFile: newImage
+      });
 
-      if (isSupabaseConfigured) {
-        const fileExt = newImage.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-        const filePath = fileName;
-
-        // Upload to gallery bucket
-        const { error: uploadErr } = await supabase.storage
-          .from('gallery')
-          .upload(filePath, newImage);
-        if (uploadErr) throw uploadErr;
-
-        const { data: publicUrlData } = supabase.storage
-          .from('gallery')
-          .getPublicUrl(filePath);
-        finalUrl = publicUrlData?.publicUrl;
-
-        // Insert to gallery DB
-        const { error: dbErr } = await supabase.from('gallery').insert([
-          {
-            image_url: finalUrl,
-            category: newCategory,
-            caption: newCaption
-          }
-        ]);
-        if (dbErr) throw dbErr;
-        toast.success("Added image to live portfolio!");
-        fetchGallery();
-      } else {
-        // Mock upload
-        finalUrl = URL.createObjectURL(newImage);
-        const newItem = {
-          id: String(Date.now()),
-          image_url: finalUrl,
-          category: newCategory,
-          caption: newCaption
-        };
-        setGallery(prev => [newItem, ...prev]);
-        toast.success("Added image to portfolio (mocked)!");
-      }
+      setDesigns(prev => [created, ...prev]);
+      toast.success(`Design ${created.design_number} added to catalog!`);
 
       // Reset fields
       setNewImage(null);
-      setNewCaption('');
+      setNewDesignNumber('');
+      setNewDesignName('');
+      setNewPrice('');
+      setNewDescription('');
     } catch (err) {
       console.error(err);
-      toast.error("Failed to upload image.");
+      toast.error("Failed to upload design.");
     } finally {
       setUploadingImage(false);
     }
@@ -528,14 +502,14 @@ export default function Admin() {
               📋 Orders Queue ({orders.length})
             </button>
             <button
-              onClick={() => setActiveTab('gallery')}
+              onClick={() => setActiveTab('designs')}
               className={`flex-1 lg:flex-none text-left font-body font-bold text-sm px-6 py-4 rounded-2xl transition-all ${
-                activeTab === 'gallery'
+                activeTab === 'designs'
                   ? 'bg-brand-primary text-brand-white shadow-md shadow-brand-primary/20 scale-[1.02]'
                   : 'bg-brand-white text-brand-textDark border border-brand-accent/15 hover:bg-brand-cardBg'
               }`}
             >
-              🖼️ Upload Designs ({gallery.length})
+              🖼️ Designs Catalog ({designs.length})
             </button>
           </div>
 
@@ -624,39 +598,70 @@ export default function Admin() {
               </div>
             )}
 
-            {/* VIEW 2: PORTFOLIO UPLOAD */}
-            {activeTab === 'gallery' && (
+            {/* VIEW 2: DESIGNS CATALOG & UPLOADS */}
+            {activeTab === 'designs' && (
               <div className="flex flex-col gap-8">
                 
-                {/* Image Upload Card */}
+                {/* Design Upload Card */}
                 <div className="bg-brand-white border border-brand-accent/25 rounded-[2.5rem] p-6 shadow-sm">
                   <h3 className="font-heading text-xl font-bold text-brand-secondary border-b border-brand-accent/15 pb-4 mb-6">
-                    Add New Design to Live Gallery
+                    Add New Design to Public Catalog
                   </h3>
                   
-                  <form onSubmit={handleAddGallery} className="flex flex-col gap-5">
+                  <form onSubmit={handleAddDesign} className="flex flex-col gap-5">
                     
+                    {/* Row 1: Design Code & Price */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      
-                      {/* Photo Selector */}
                       <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Select Design Photo</label>
+                        <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">
+                          Unique Design Number
+                        </label>
                         <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handlePhotoSelect}
-                          required
-                          className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3 font-body text-xs font-semibold"
+                          type="text"
+                          placeholder={`e.g. ME-${100 + designs.length + 1}`}
+                          value={newDesignNumber}
+                          onChange={(e) => setNewDesignNumber(e.target.value)}
+                          className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3.5 font-body text-sm font-semibold focus:outline-none focus:border-brand-primary text-brand-textDark"
                         />
                       </div>
 
-                      {/* Category Selector */}
                       <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Category Tag</label>
+                        <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">
+                          Price (₹)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. ₹1,800 or 1800"
+                          value={newPrice}
+                          onChange={(e) => setNewPrice(e.target.value)}
+                          required
+                          className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3.5 font-body text-sm font-semibold focus:outline-none focus:border-brand-primary text-brand-textDark"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 2: Name & Category */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">
+                          Design Name
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Royal Peacock Zardosi Back"
+                          value={newDesignName}
+                          onChange={(e) => setNewDesignName(e.target.value)}
+                          required
+                          className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3.5 font-body text-sm font-semibold focus:outline-none focus:border-brand-primary text-brand-textDark"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Category</label>
                         <select
                           value={newCategory}
                           onChange={(e) => setNewCategory(e.target.value)}
-                          className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3 font-body text-sm font-semibold"
+                          className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3.5 font-body text-sm font-semibold focus:outline-none focus:border-brand-primary text-brand-textDark"
                         >
                           <option value="Blouse">Blouse</option>
                           <option value="Bridal">Bridal</option>
@@ -665,19 +670,60 @@ export default function Admin() {
                           <option value="Name">Name</option>
                         </select>
                       </div>
-
                     </div>
 
-                    {/* Caption description */}
+                    {/* Row 3: Photo Selector */}
                     <div className="flex flex-col gap-2">
-                      <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Short Caption / Description</label>
+                      <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Select Design Photo</label>
                       <input
-                        type="text"
-                        placeholder="e.g., Majestic Peacock Back-neck embroidery layout..."
-                        value={newCaption}
-                        onChange={(e) => setNewCaption(e.target.value)}
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoSelect}
                         required
-                        className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3.5 font-body text-sm font-semibold focus:outline-none focus:border-brand-primary text-brand-textDark"
+                        className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3 font-body text-xs font-semibold"
+                      />
+                      {newImage && (
+                        <span className="text-[11px] text-brand-primary font-bold">
+                          Selected file: {newImage.name}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Row 4: Fabric & Work Type Properties */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Fabric Compatibility</label>
+                        <input
+                          type="text"
+                          value={newFabric}
+                          onChange={(e) => setNewFabric(e.target.value)}
+                          placeholder="e.g. Raw Silk, Brocade, Silk Cotton"
+                          className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3.5 font-body text-sm font-semibold focus:outline-none focus:border-brand-primary text-brand-textDark"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Stitching Work Type</label>
+                        <input
+                          type="text"
+                          value={newWorkType}
+                          onChange={(e) => setNewWorkType(e.target.value)}
+                          placeholder="e.g. Digital Zardosi & Thread"
+                          className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3.5 font-body text-sm font-semibold focus:outline-none focus:border-brand-primary text-brand-textDark"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-brand-textDark uppercase tracking-wider">Design Description & Motifs</label>
+                      <textarea
+                        rows="2"
+                        placeholder="e.g., Majestic Peacock Back-neck embroidery layout with dense gold zari..."
+                        value={newDescription}
+                        onChange={(e) => setNewDescription(e.target.value)}
+                        required
+                        className="bg-brand-cardBg border border-brand-accent/35 rounded-2xl px-4 py-3.5 font-body text-sm font-semibold focus:outline-none focus:border-brand-primary text-brand-textDark resize-none"
                       />
                     </div>
 
@@ -688,11 +734,11 @@ export default function Admin() {
                     >
                       {uploadingImage ? (
                         <>
-                          <RefreshCw className="w-4 h-4 animate-spin" /> Uploading image to cloud...
+                          <RefreshCw className="w-4 h-4 animate-spin" /> Uploading design to catalog...
                         </>
                       ) : (
                         <>
-                          <Plus className="w-4 h-4" /> Publish to Public Gallery
+                          <Plus className="w-4 h-4" /> Publish Design to Catalog
                         </>
                       )}
                     </button>
@@ -700,42 +746,61 @@ export default function Admin() {
                   </form>
                 </div>
 
-                {/* Gallery List Management Card */}
+                {/* Designs Catalog Management Card */}
                 <div className="bg-brand-white border border-brand-accent/25 rounded-[2.5rem] p-6 shadow-sm">
-                  <h3 className="font-heading text-xl font-bold text-brand-secondary border-b border-brand-accent/15 pb-4 mb-6">
-                    Manage Existing Portfolio ({gallery.length})
-                  </h3>
+                  <div className="flex justify-between items-center border-b border-brand-accent/15 pb-4 mb-6">
+                    <h3 className="font-heading text-xl font-bold text-brand-secondary">
+                      Active Designs Catalog ({designs.length})
+                    </h3>
+                    <button 
+                      onClick={fetchDesigns}
+                      className="p-2 rounded-xl text-brand-textDark hover:bg-brand-cardBg transition-colors"
+                      title="Refresh designs"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${designsLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
 
-                  {galleryLoading ? (
+                  {designsLoading ? (
                     <div className="flex items-center justify-center py-8 text-brand-primary">
                       <Loader className="w-8 h-8 animate-spin" />
                     </div>
-                  ) : gallery.length === 0 ? (
+                  ) : designs.length === 0 ? (
                     <div className="text-center py-8 text-brand-textDark/50 font-semibold font-body text-sm">
-                      No images in the portfolio yet.
+                      No designs in the catalog yet.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {gallery.map((g) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {designs.map((d) => (
                         <div 
-                          key={g.id}
-                          className="bg-brand-cardBg border border-brand-accent/20 rounded-2xl p-2.5 relative flex flex-col gap-2 shadow-inner group"
+                          key={d.id}
+                          className="bg-brand-cardBg border border-brand-accent/20 rounded-2xl p-3 relative flex flex-col gap-2.5 shadow-sm group hover:shadow-md transition-all"
                         >
-                          <div className="aspect-square rounded-xl overflow-hidden border border-brand-accent/30 relative">
-                            <img src={g.image_url} alt="" className="w-full h-full object-cover" />
+                          <div className="aspect-[4/3] rounded-xl overflow-hidden border border-brand-accent/30 relative">
+                            <img src={d.image_url} alt={d.name} className="w-full h-full object-cover" />
                             
+                            {/* Unique Code Tag */}
+                            <span className="absolute top-2 left-2 bg-brand-secondary text-brand-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow">
+                              #{d.design_number}
+                            </span>
+
                             {/* Delete Overlay Button */}
                             <button
-                              onClick={() => handleDeleteGallery(g.id)}
+                              onClick={() => handleDeleteDesign(d.id)}
                               className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-brand-white p-2 rounded-full shadow-md transition-colors opacity-0 group-hover:opacity-100"
-                              title="Delete from gallery"
+                              title="Delete design"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                          <div className="px-1 text-[10px] font-semibold flex flex-col">
-                            <span className="text-brand-primary uppercase tracking-widest font-bold font-heading leading-none">{g.category}</span>
-                            <span className="text-brand-textDark/70 mt-1 line-clamp-1 leading-tight">{g.caption}</span>
+                          
+                          <div className="px-1 text-xs flex flex-col gap-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-brand-primary uppercase tracking-wider font-bold text-[10px]">{d.category}</span>
+                              <span className="font-heading font-bold text-brand-secondary text-sm">{d.price}</span>
+                            </div>
+                            <span className="text-brand-secondary font-bold font-heading line-clamp-1">{d.name}</span>
+                            <span className="text-brand-textDark/60 text-[11px] line-clamp-1">{d.description}</span>
                           </div>
                         </div>
                       ))}

@@ -22,7 +22,8 @@ export default function Navbar() {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Services', path: '/services' },
-    { name: 'Gallery', path: '/gallery' },
+    { name: 'Designs', path: '/designs' },
+    { name: 'Customised Design', path: '/custom-design' },
     { name: 'About', path: '/about' },
   ];
 
@@ -52,7 +53,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-5 lg:gap-8">
             {navLinks.map((link) => (
               <NavLink
                 key={link.path}
@@ -78,10 +79,10 @@ export default function Navbar() {
               </NavLink>
             ))}
             <Link 
-              to="/order" 
+              to="/designs" 
               className="bg-brand-primary hover:bg-brand-primary/95 text-brand-white font-body text-sm font-bold px-5 py-2.5 rounded-full transition-all hover:scale-105 shadow-md shadow-brand-primary/20 hover:shadow-brand-primary/30"
             >
-              Order Now
+              Designs
             </Link>
           </nav>
 
@@ -142,11 +143,11 @@ export default function Navbar() {
                   </NavLink>
                 ))}
                 <Link 
-                  to="/order" 
+                  to="/designs" 
                   onClick={() => setIsOpen(false)}
                   className="bg-brand-primary text-brand-white text-center font-body font-bold py-3 rounded-full shadow-lg shadow-brand-primary/20 mt-4"
                 >
-                  Order Now
+                  Designs
                 </Link>
               </nav>
             </motion.div>

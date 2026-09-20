@@ -76,7 +76,20 @@ CREATE TABLE public.services (
     image_url TEXT NOT NULL
 );
 
--- 2. Create Gallery Table
+-- 2. Create Designs Table
+CREATE TABLE public.designs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    design_number TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    price TEXT NOT NULL,
+    category TEXT NOT NULL,
+    image_url TEXT NOT NULL,
+    description TEXT,
+    properties JSONB DEFAULT '{}'::jsonb
+);
+
+-- 3. Create Legacy Gallery Table (Backwards Compatibility)
 CREATE TABLE public.gallery (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
@@ -85,7 +98,7 @@ CREATE TABLE public.gallery (
     caption TEXT
 );
 
--- 3. Create Orders Table
+-- 4. Create Orders Table
 CREATE TABLE public.orders (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
@@ -99,17 +112,22 @@ CREATE TABLE public.orders (
     status TEXT DEFAULT 'Pending'::text NOT NULL
 );
 
--- Enable Row Level Security (RLS) for services and gallery (public read, admin write)
+-- Enable Row Level Security (RLS) for all tables
 ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.designs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gallery ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
 -- Public Read Policies
 CREATE POLICY "Allow public read on services" ON public.services FOR SELECT USING (true);
+CREATE POLICY "Allow public read on designs" ON public.designs FOR SELECT USING (true);
 CREATE POLICY "Allow public read on gallery" ON public.gallery FOR SELECT USING (true);
 
 -- Admin Full Access Policies (requires Supabase Auth)
 CREATE POLICY "Allow admin full access on services" ON public.services 
+    FOR ALL USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Allow admin full access on designs" ON public.designs 
     FOR ALL USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Allow admin full access on gallery" ON public.gallery 

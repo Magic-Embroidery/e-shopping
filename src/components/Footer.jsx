@@ -66,13 +66,16 @@ export default function Footer() {
                 <Link to="/services" className="text-sm font-semibold hover:text-brand-primary transition-colors">Our Services</Link>
               </li>
               <li>
-                <Link to="/gallery" className="text-sm font-semibold hover:text-brand-primary transition-colors">Design Gallery</Link>
+                <Link to="/designs" className="text-sm font-semibold hover:text-brand-primary transition-colors">Designs Catalog</Link>
+              </li>
+              <li>
+                <Link to="/custom-design" className="text-sm font-semibold hover:text-brand-primary transition-colors">Customised Design</Link>
               </li>
               <li>
                 <Link to="/about" className="text-sm font-semibold hover:text-brand-primary transition-colors">About Us</Link>
               </li>
               <li>
-                <Link to="/order" className="text-sm font-semibold hover:text-brand-primary transition-colors">Order Form</Link>
+                <Link to="/designs" className="text-sm font-semibold hover:text-brand-primary transition-colors">Order Designs</Link>
               </li>
             </ul>
           </div>

@@ -6,7 +6,7 @@ export default function HowItWorks() {
     {
       icon: <Sparkles className="w-6 h-6" />,
       title: '1. Choose Your Design',
-      description: 'Pick from our exquisite collection in the gallery or describe your own unique custom embroidery concept.'
+      description: 'Pick from our exquisite collection in the designs catalog or upload your custom design photo.'
     },
     {
       icon: <MessageSquare className="w-6 h-6" />,
