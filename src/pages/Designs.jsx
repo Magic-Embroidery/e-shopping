@@ -46,7 +46,7 @@ export default function Designs() {
   const [newImageFile, setNewImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  const categories = ['All', 'Blouse', 'Bridal', 'Saree', 'Logo', 'Name'];
+  const categories = ['All', 'Blouse', 'Bridal', 'Saree and Kurthi', 'Logo', 'Name'];
 
   // Check if admin is authenticated
   useEffect(() => {
@@ -87,9 +87,14 @@ export default function Designs() {
 
   // Filtered designs based on category and search query
   const filteredDesigns = designs.filter((item) => {
-    const matchesCategory = activeCategory === 'All' 
-      ? true 
-      : (item.category || '').toLowerCase() === activeCategory.toLowerCase();
+    const itemCat = (item.category || '').toLowerCase();
+    const activeCat = activeCategory.toLowerCase();
+
+    const matchesCategory = activeCategory === 'All'
+      ? true
+      : activeCat === 'saree and kurthi'
+        ? (itemCat === 'saree and kurthi' || itemCat === 'saree' || itemCat.includes('kurth') || itemCat.includes('kurt'))
+        : itemCat === activeCat;
     
     const query = searchQuery.trim().toLowerCase();
     const matchesSearch = !query || 
@@ -131,12 +136,13 @@ export default function Designs() {
 
     setUploading(true);
     try {
-      const designNo = newDesignNumber.trim() || `ME-${Math.floor(100 + Math.random() * 900)}`;
+      const cleanNum = newDesignNumber.trim().replace(/^(?:#\s*)?(?:ME-?)+/i, '').replace(/^ME/i, '');
+      const designNo = cleanNum ? `ME-${cleanNum.toUpperCase()}` : `ME-${Math.floor(100 + Math.random() * 900)}`;
 
       const created = await createDesign({
         design_number: designNo,
         name: newName.trim(),
-        price: newPrice.trim() || '₹1,499',
+        price: newPrice.trim(),
         category: newCategory,
         description: newDescription.trim() || 'Custom high-precision digital embroidery design.',
         properties: {
@@ -339,11 +345,11 @@ export default function Designs() {
                   />
                   {/* Unique Design Number Tag */}
                   <span className="absolute top-3 left-3 bg-brand-secondary text-brand-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
-                    #{design.design_number}
+                    #{design.design_number.replace(/^#/, '')}
                   </span>
                   {/* Category Pill */}
                   <span className="absolute top-3 right-3 bg-brand-white/90 backdrop-blur-md text-brand-primary border border-brand-accent/20 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
-                    {design.category}
+                    {design.category === 'Saree' ? 'Saree and Kurthi' : design.category}
                   </span>
                 </div>
 
@@ -361,7 +367,7 @@ export default function Designs() {
                   {/* Price and Details Action Row */}
                   <div className="flex items-center justify-between pt-3 border-t border-brand-accent/15 mt-auto">
                     <div className="flex flex-col">
-                      <span className="text-[10px] uppercase tracking-wider text-brand-textDark/50 font-bold">Estimated Price</span>
+                      <span className="text-[10px] uppercase tracking-wider text-brand-textDark/60 font-bold">Price</span>
                       <span className="font-heading text-lg font-bold text-brand-primary">
                         {design.price}
                       </span>
@@ -434,7 +440,7 @@ export default function Designs() {
                   />
                   {/* Floating Number Overlay */}
                   <span className="absolute top-4 left-4 bg-brand-secondary/90 text-brand-white text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-md backdrop-blur-sm">
-                    #{selectedDesign.design_number}
+                    #{selectedDesign.design_number.replace(/^#/, '')}
                   </span>
                 </div>
               </div>
@@ -445,10 +451,10 @@ export default function Designs() {
                   {/* Category & Design Number Row */}
                   <div className="flex items-center justify-between">
                     <span className="bg-brand-primary/10 text-brand-primary text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-brand-primary/20">
-                      {selectedDesign.category} Embroidery
+                      {selectedDesign.category === 'Saree' ? 'Saree and Kurthi' : selectedDesign.category} Embroidery
                     </span>
                     <span className="text-xs font-bold text-brand-textDark/60 tracking-wider">
-                      Item ID: {selectedDesign.design_number}
+                      Item ID: {selectedDesign.design_number.replace(/^#/, '')}
                     </span>
                   </div>
 
@@ -460,7 +466,7 @@ export default function Designs() {
                   {/* Price Banner */}
                   <div className="bg-brand-cardBg border border-brand-accent/25 rounded-2xl p-4 flex items-center justify-between">
                     <div className="flex flex-col">
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-brand-textDark/60">Estimated Tailoring Price</span>
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-brand-textDark/60">Price</span>
                       <span className="font-heading text-2xl sm:text-3xl font-bold text-brand-primary">
                         {selectedDesign.price}
                       </span>
@@ -532,10 +538,10 @@ export default function Designs() {
                     rel="noopener noreferrer"
                     className="w-full bg-green-600 hover:bg-green-700 text-white font-body font-bold text-sm py-4 rounded-full shadow-lg shadow-green-600/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
                   >
-                    <MessageCircle className="w-5 h-5 fill-current" /> Order Design #{selectedDesign.design_number} on WhatsApp
+                    <MessageCircle className="w-5 h-5 fill-current" /> Order Design #{selectedDesign.design_number.replace(/^#/, '')} on WhatsApp
                   </a>
                   <p className="text-[11px] text-center text-brand-textDark/60 font-medium">
-                    Pre-fills Design #{selectedDesign.design_number} ({selectedDesign.price}) directly into our WhatsApp chat.
+                    Pre-fills Design #{selectedDesign.design_number.replace(/^#/, '')} ({selectedDesign.price}) directly into our WhatsApp chat.
                   </p>
                 </div>
 
@@ -643,7 +649,7 @@ export default function Designs() {
                     >
                       <option value="Blouse">Blouse</option>
                       <option value="Bridal">Bridal</option>
-                      <option value="Saree">Saree</option>
+                      <option value="Saree and Kurthi">Saree and Kurthi</option>
                       <option value="Logo">Logo</option>
                       <option value="Name">Name</option>
                     </select>

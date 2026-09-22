@@ -26,7 +26,7 @@ export default function Footer() {
   const services = [
     { name: 'Bridal Blouse Embroidery', path: '/services' },
     { name: 'Blouse Embroidery', path: '/services' },
-    { name: 'Saree Embroidery', path: '/services' },
+    { name: 'Saree & Kurthi Embroidery', path: '/services' },
     { name: 'Logo Embroidery', path: '/services' },
     { name: 'Initial & Name Embroidery', path: '/services' },
     { name: 'Burka Alteration & Embroidery', path: '/services' }

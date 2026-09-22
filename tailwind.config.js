@@ -26,8 +26,8 @@ export default {
         }
       },
       fontFamily: {
-        heading: ['"Playfair Display"', 'serif'],
-        body: ['Poppins', 'sans-serif'],
+        heading: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        body: ['Inter', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',

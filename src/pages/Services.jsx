@@ -20,9 +20,9 @@ const fullServices = [
     icon: <Scissors className="w-5 h-5" />
   },
   {
-    title: 'Saree Embroidery',
+    title: 'Saree & Kurthi Embroidery',
     image: 'https://images.unsplash.com/photo-1572087552449-d82167336021?auto=format&fit=crop&w=800&q=80',
-    desc: 'Drape yourself in beauty. We stitch grand borders, scattered small buttis, and beautiful pallu motifs directly onto georgette, silk, organza, or cotton sarees.',
+    desc: 'Drape yourself in beauty. We stitch grand borders, scattered small buttis, and beautiful pallu motifs directly onto georgette, silk, organza, or cotton sarees, as well as bespoke kurthi patterns.',
     priceText: 'Customized borders',
     features: ['Butti borders', 'Heavy pallu designs', 'Double-thread borders'],
     icon: <Heart className="w-5 h-5" />

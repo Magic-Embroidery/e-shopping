@@ -15,10 +15,12 @@
 
   body {
     @apply bg-brand-bg text-brand-textDark font-body antialiased selection:bg-brand-accent selection:text-brand-textDark;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading text-brand-secondary font-semibold;
+    @apply font-heading text-brand-secondary font-bold tracking-tight;
   }
 }
 

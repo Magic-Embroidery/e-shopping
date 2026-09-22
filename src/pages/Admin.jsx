@@ -279,11 +279,12 @@ export default function Admin() {
 
     setUploadingImage(true);
     try {
-      const designNum = newDesignNumber.trim() || `ME-${100 + designs.length + 1}`;
+      const cleanNum = newDesignNumber.trim().replace(/^(?:#\s*)?(?:ME-?)+/i, '').replace(/^ME/i, '');
+      const designNum = cleanNum ? `ME-${cleanNum.toUpperCase()}` : `ME-${100 + designs.length + 1}`;
       const created = await createDesign({
         design_number: designNum,
         name: newDesignName.trim(),
-        price: newPrice.trim() || '₹1,499',
+        price: newPrice.trim(),
         category: newCategory,
         description: newDescription.trim() || 'Digital embroidery design pattern.',
         properties: {
@@ -665,7 +666,7 @@ export default function Admin() {
                         >
                           <option value="Blouse">Blouse</option>
                           <option value="Bridal">Bridal</option>
-                          <option value="Saree">Saree</option>
+                          <option value="Saree and Kurthi">Saree and Kurthi</option>
                           <option value="Logo">Logo</option>
                           <option value="Name">Name</option>
                         </select>
@@ -781,7 +782,7 @@ export default function Admin() {
                             
                             {/* Unique Code Tag */}
                             <span className="absolute top-2 left-2 bg-brand-secondary text-brand-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow">
-                              #{d.design_number}
+                              #{d.design_number ? d.design_number.replace(/^#/, '') : ''}
                             </span>
 
                             {/* Delete Overlay Button */}
@@ -796,7 +797,7 @@ export default function Admin() {
                           
                           <div className="px-1 text-xs flex flex-col gap-1">
                             <div className="flex items-center justify-between">
-                              <span className="text-brand-primary uppercase tracking-wider font-bold text-[10px]">{d.category}</span>
+                              <span className="text-brand-primary uppercase tracking-wider font-bold text-[10px]">{d.category === 'Saree' ? 'Saree and Kurthi' : d.category}</span>
                               <span className="font-heading font-bold text-brand-secondary text-sm">{d.price}</span>
                             </div>
                             <span className="text-brand-secondary font-bold font-heading line-clamp-1">{d.name}</span>

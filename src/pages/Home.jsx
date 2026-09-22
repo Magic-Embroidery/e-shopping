@@ -192,14 +192,14 @@ export default function Home() {
             <span>Blouse Embroidery •</span>
             <span>Bridal Work •</span>
             <span>Logo Embroidery •</span>
-            <span>Saree Work •</span>
+            <span>Saree & Kurthi •</span>
             <span>Name Embroidery •</span>
             <span>Burka Alterations •</span>
             {/* Second set to enable infinite loops */}
             <span>Blouse Embroidery •</span>
             <span>Bridal Work •</span>
             <span>Logo Embroidery •</span>
-            <span>Saree Work •</span>
+            <span>Saree & Kurthi •</span>
             <span>Name Embroidery •</span>
             <span>Burka Alterations •</span>
           </div>

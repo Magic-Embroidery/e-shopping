@@ -71,7 +71,7 @@ export const initialDesigns = [
     design_number: 'ME-105',
     name: 'Royal Organza Saree Sleeve Motif',
     price: '₹1,799',
-    category: 'Saree',
+    category: 'Saree and Kurthi',
     image_url: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=800&h=800&q=85',
     description: 'Weightless floral butti sprays and scalloped zari border tailored specifically for sheer organza and tissue silk sarees.',
     properties: {
@@ -87,7 +87,7 @@ export const initialDesigns = [
     design_number: 'ME-106',
     name: 'Double-Bordered Zari Pallu Motif',
     price: '₹2,199',
-    category: 'Saree',
+    category: 'Saree and Kurthi',
     image_url: 'https://images.unsplash.com/photo-1572087552449-d82167336021?auto=format&fit=crop&w=800&h=800&q=85',
     description: 'Traditional temple motif combined with dual geometric zari lines. Designed to replicate handloom Kanchipuram weaving precision.',
     properties: {
@@ -166,6 +166,103 @@ export function setLocalDesigns(designs) {
 }
 
 /**
+ * Helper to parse and standardize design records from Supabase (designs or gallery table)
+ * and local storage. Intelligently synchronizes prices, extracts unique design numbers,
+ * and cleans design titles.
+ */
+export function parseDesignRecord(item, idx = 0) {
+  if (!item) return null;
+
+  let designNumber = item.design_number ? String(item.design_number).trim() : '';
+  let price = item.price ? String(item.price).trim() : '';
+  let name = item.name ? String(item.name).trim() : (item.caption ? String(item.caption).trim() : '');
+  let description = item.description ? String(item.description).trim() : (item.caption ? String(item.caption).trim() : '');
+
+  // 1. Price extraction from name / caption / description if item.price is missing or default
+  // Matches expressions in parentheses like (₹1500), (₹400 Onwards), (₹500 - 2000), (₹400-1000), (₹1,499), (500 Onwards)
+  const priceRegex = /\((?:₹|Rs\.?|INR)?\s*([0-9,]+(?:\s*-\s*[0-9,]+)?(?:\s*[a-zA-Z]+)?)\)/i;
+  
+  if (!price || price === '₹1,499') {
+    const rawMatch = name.match(priceRegex) || (item.caption && String(item.caption).match(priceRegex)) || description.match(priceRegex);
+    if (rawMatch && rawMatch[1]) {
+      const extracted = rawMatch[1].trim();
+      price = extracted.startsWith('₹') ? extracted : `₹${extracted}`;
+    }
+  }
+
+  // 2. Clean trailing price in parentheses from name
+  name = name.replace(priceRegex, '').trim();
+
+  // 3. Extract and normalize design number from name or caption if missing
+  // Matches patterns like "ME-ME1002 - ", "ME-1002: ", "ME1002 - ", "#ME-101 - "
+  if (!designNumber) {
+    const numMatch = name.match(/^(?:#\s*)?(?:ME-?)+([A-Za-z0-9]+)(?:\s*[-–]\s*|\s*:\s*)/i) ||
+                     (item.caption && String(item.caption).match(/^(?:#\s*)?(?:ME-?)+([A-Za-z0-9]+)(?:\s*[-–]\s*|\s*:\s*)/i));
+    if (numMatch && numMatch[1]) {
+      designNumber = `ME-${numMatch[1].toUpperCase()}`;
+      name = name.slice(numMatch[0].length).trim();
+    }
+  }
+
+  // 4. Normalize any duplicate prefixes in design number (e.g. ME-ME1002 -> ME-1002, ##ME-101 -> ME-101)
+  if (designNumber) {
+    let cleanCode = designNumber.replace(/^(?:#\s*)?(?:ME-?)+/i, '');
+    cleanCode = cleanCode.replace(/^ME/i, '');
+    designNumber = cleanCode ? `ME-${cleanCode.toUpperCase()}` : `ME-${100 + (idx + 1)}`;
+  } else {
+    designNumber = `ME-${100 + (idx + 1)}`;
+  }
+
+  // 5. Clean any residual leading "ME-... - " from name
+  name = name.replace(/^(?:#\s*)?(?:ME-?)+[A-Za-z0-9]+(?:\s*[-–]\s*|\s*:\s*)/i, '').trim();
+  if (!name) {
+    name = `Embroidery Pattern ${designNumber}`;
+  }
+
+  // 6. Ensure price has ₹ prefix and a sensible fallback if empty
+  if (!price) {
+    price = '₹400 Onwards';
+  } else if (!price.startsWith('₹')) {
+    price = `₹${price}`;
+  }
+
+  // 7. Clean description if it is just a duplicate of caption
+  if (item.caption && (description === item.caption || description.includes(name))) {
+    description = `Digital computer embroidery design tailored for ${item.category || 'ethnic'} attire with precision zari & thread finish.`;
+  } else if (!description) {
+    description = 'High-precision digital embroidery design crafted to perfection.';
+  }
+
+  // 8. Properties
+  const properties = (typeof item.properties === 'object' && item.properties !== null)
+    ? item.properties
+    : {
+        fabric: item.fabric || 'Silk, Raw Silk & Cotton',
+        work_type: item.work_type || 'Digital Zari & Resham Stitch',
+        neck_style: item.neck_style || 'Custom Neck & Sleeves',
+        stitch_density: item.stitch_density || 'High Density (50,000+ Stitches)',
+        turnaround: item.turnaround || '2 - 3 Days'
+      };
+
+  let category = item.category ? String(item.category).trim() : 'Blouse';
+  if (category.toLowerCase() === 'saree') {
+    category = 'Saree and Kurthi';
+  }
+
+  return {
+    id: String(item.id || idx + 1),
+    design_number: designNumber,
+    name,
+    price,
+    category,
+    image_url: item.image_url,
+    description,
+    properties,
+    created_at: item.created_at
+  };
+}
+
+/**
  * Fetch all designs: tries Supabase first (designs table, then gallery fallback),
  * then falls back to local designs.
  */
@@ -180,25 +277,7 @@ export async function fetchAllDesigns() {
 
       if (!error && data && data.length > 0) {
         // Map database records into standardized design objects
-        return data.map((item, idx) => ({
-          id: String(item.id || idx + 1),
-          design_number: item.design_number || `ME-${100 + (idx + 1)}`,
-          name: item.name || item.caption || 'Custom Embroidery Design',
-          price: item.price ? (String(item.price).startsWith('₹') ? item.price : `₹${item.price}`) : '₹1,499',
-          category: item.category || 'Blouse',
-          image_url: item.image_url,
-          description: item.description || item.caption || 'Exquisite computer-tailored digital embroidery design.',
-          properties: typeof item.properties === 'object' && item.properties !== null
-            ? item.properties
-            : {
-                fabric: item.fabric || 'Silk & Cotton Blends',
-                work_type: item.work_type || 'Computer Zari & Thread',
-                neck_style: item.neck_style || 'Custom Neckline',
-                stitch_density: item.stitch_density || 'High-Density Digital Stitch',
-                turnaround: item.turnaround || '2 - 3 Days'
-              },
-          created_at: item.created_at
-        }));
+        return data.map((item, idx) => parseDesignRecord(item, idx));
       }
 
       // 2. Fallback to 'gallery' table if 'designs' table doesn't exist yet
@@ -208,23 +287,7 @@ export async function fetchAllDesigns() {
         .order('created_at', { ascending: false });
 
       if (!galleryError && galleryData && galleryData.length > 0) {
-        return galleryData.map((item, idx) => ({
-          id: String(item.id || idx + 1),
-          design_number: item.design_number || `ME-${101 + idx}`,
-          name: item.caption || `Embroidery Pattern #${101 + idx}`,
-          price: item.price || '₹1,499',
-          category: item.category || 'Blouse',
-          image_url: item.image_url,
-          description: item.caption || 'Digital high-precision computer embroidery tailored to your measurements.',
-          properties: {
-            fabric: 'Silk, Cotton & Georgette',
-            work_type: 'Digital Zari & Thread',
-            neck_style: 'Custom Pattern Fit',
-            stitch_density: 'High-Density Digital Stitch',
-            turnaround: '2 - 3 Days'
-          },
-          created_at: item.created_at
-        }));
+        return galleryData.map((item, idx) => parseDesignRecord(item, idx));
       }
     } catch (err) {
       console.warn('Supabase designs fetch encountered an error, using local catalog:', err);
@@ -232,7 +295,7 @@ export async function fetchAllDesigns() {
   }
 
   // Offline / Mock mode fallback
-  return getLocalDesigns();
+  return getLocalDesigns().map((item, idx) => parseDesignRecord(item, idx));
 }
 
 /**
@@ -250,14 +313,17 @@ export async function createDesign({
 }) {
   let finalImageUrl = imageUrl || '';
 
-  // Formatted price
-  const formattedPrice = price
-    ? (String(price).trim().startsWith('₹') ? String(price).trim() : `₹${String(price).trim()}`)
-    : '₹1,499';
-
-  const standardizedNumber = (design_number && design_number.trim())
-    ? (design_number.trim().toUpperCase().startsWith('ME-') ? design_number.trim().toUpperCase() : `ME-${design_number.trim().toUpperCase()}`)
+  // Clean design number - prevent double ME- prefix
+  let cleanNum = (design_number || '').trim().replace(/^(?:#\s*)?(?:ME-?)+/i, '');
+  cleanNum = cleanNum.replace(/^ME/i, '');
+  const standardizedNumber = cleanNum
+    ? `ME-${cleanNum.toUpperCase()}`
     : `ME-${Math.floor(100 + Math.random() * 900)}`;
+
+  // Formatted price - preserve exact price entered by user
+  const formattedPrice = (price && String(price).trim())
+    ? (String(price).trim().startsWith('₹') ? String(price).trim() : `₹${String(price).trim()}`)
+    : '₹499 Onwards';
 
   if (isSupabaseConfigured && supabase) {
     try {
@@ -293,24 +359,22 @@ export async function createDesign({
       const { data, error } = await supabase.from('designs').insert([newRecord]).select();
       if (error) {
         // Fallback to gallery table if designs table not yet migrated in Supabase
-        const { error: galleryErr } = await supabase.from('gallery').insert([{
+        const { data: galleryData, error: galleryErr } = await supabase.from('gallery').insert([{
           image_url: finalImageUrl,
           category,
           caption: `${standardizedNumber} - ${name} (${formattedPrice})`
-        }]);
+        }]).select();
         if (galleryErr) throw galleryErr;
+
+        return parseDesignRecord(galleryData?.[0] || {
+          id: String(Date.now()),
+          image_url: finalImageUrl,
+          category,
+          caption: `${standardizedNumber} - ${name} (${formattedPrice})`
+        });
       }
 
-      return {
-        id: data?.[0]?.id || String(Date.now()),
-        design_number: standardizedNumber,
-        name,
-        price: formattedPrice,
-        category,
-        image_url: finalImageUrl,
-        description,
-        properties
-      };
+      return parseDesignRecord(data?.[0] || newRecord);
     } catch (err) {
       console.error('Supabase create design error, saving to local store:', err);
     }
